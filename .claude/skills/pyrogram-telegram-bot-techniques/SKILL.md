@@ -1,15 +1,15 @@
 ---
 name: pyrogram-telegram-bot-techniques
-description: Pyrogram Telegram机器人开发技巧：解析消息链接、自定义Session超时、避免视频黑屏上传、去除消息广告。Use when working with Pyrogram, parsing Telegram message links, uploading videos, or removing advertisement content from messages.
+description: Pyrogram Telegram bot development techniques: parsing message links, custom session timeouts, avoiding black-screen video uploads, and removing ads from messages.Use when working with Pyrogram, parsing Telegram message links, uploading videos, or removing advertisement content from messages.
 ---
 
-# Pyrogram Telegram 机器人开发技巧
+# Pyrogram Telegram Bot Development Techniques
 
-## 1. 解析 Telegram 消息链接
+## 1. Parsing Telegram Message Links
 
-从 Telegram 链接中提取 chat_id、message_id 和 topic_id。
+Extract chat_id, message_id, and topic_id from a Telegram link.
 
-### Link 数据结构
+### Link data structure
 
 ```python
 from dataclasses import dataclass
@@ -25,7 +25,7 @@ class Link:
     topic_id: Optional[int] = None
 ```
 
-### 提取链接信息
+### Extracting link information
 
 ```python
 def extract_info_from_link(link: str) -> Link:
@@ -69,14 +69,14 @@ def extract_info_from_link(link: str) -> Link:
     return result
 ```
 
-### 解析链接并处理评论
+### Parsing links and handling comments
 
 ```python
 async def parse_link(client: pyrogram.Client, link_str: str):
     """Parse link - handles both regular messages and comments"""
     link = extract_info_from_link(link_str)
     if link.comment_id:
-        # 评论链接需要获取关联群组的 ID
+        # Comment links need the ID of the linked discussion group
         chat = await client.get_chat(link.group_id)
         if chat:
             return chat.linked_chat.id, link.comment_id, link.topic_id
@@ -84,17 +84,17 @@ async def parse_link(client: pyrogram.Client, link_str: str):
     return link.group_id, link.post_id, link.topic_id
 ```
 
-**支持的链接格式:**
-- `https://t.me/channel_name/123` - 公开频道消息
-- `https://t.me/c/1234567890/123` - 私有频道消息 (自动转换为 -100 格式)
-- `https://t.me/channel_name/topic_id/123` - 话题消息
-- `https://t.me/channel_name/123?comment=456` - 评论消息
+**Supported link formats:**
+- `https://t.me/channel_name/123` - Public channel message
+- `https://t.me/c/1234567890/123` - Private channel message (automatically converted to the -100 format)
+- `https://t.me/channel_name/topic_id/123` - Topic message
+- `https://t.me/channel_name/123?comment=456` - Comment message
 
 ---
 
-## 2. 自定义 Session 超时 (HookSession/HookClient)
+## 2. Custom Session Timeout (HookSession/HookClient)
 
-继承 Pyrogram 的 Session 和 Client 类来自定义连接超时时间。
+Subclass Pyrogram's Session and Client classes to customize the connection timeout.
 
 ```python
 import pyrogram
@@ -110,7 +110,7 @@ class HookSession(pyrogram.session.Session):
 class HookClient(pyrogram.Client):
     """Hook Client with custom session timeout"""
 
-    START_TIME_OUT = 60  # 默认 60 秒
+    START_TIME_OUT = 60  # Default 60 seconds
 
     def __init__(self, name: str, **kwargs):
         if "start_timeout" in kwargs:
@@ -126,7 +126,7 @@ class HookClient(pyrogram.Client):
 
         await self.load_session()
 
-        # 使用自定义的 HookSession
+        # Use the custom HookSession
         self.session = HookSession(
             self,
             await self.storage.dc_id(),
@@ -162,24 +162,24 @@ class HookClient(pyrogram.Client):
             return self
 ```
 
-**使用方法:**
+**Usage:**
 
 ```python
 client = HookClient(
     "my_bot",
     api_id=API_ID,
     api_hash=API_HASH,
-    start_timeout=120  # 自定义超时时间为 120 秒
+    start_timeout=120  # Custom timeout of 120 seconds
 )
 ```
 
 ---
 
-## 3. 避免视频上传黑屏
+## 3. Avoiding Black-Screen Video Uploads
 
-上传视频时必须提供缩略图和视频属性，否则视频可能显示为黑屏。
+When uploading a video you must provide a thumbnail and the video attributes, otherwise the video may show as a black screen.
 
-### 下载视频缩略图
+### Downloading the video thumbnail
 
 ```python
 import os
@@ -208,7 +208,7 @@ async def download_thumbnail(
                 thumbnail_file = await client.download_media(
                     thumbnail, file_name=unique_name
                 )
-                # 验证文件大小
+                # Verify the file size
                 if os.path.getsize(thumbnail_file) == thumbnail.file_size:
                     break
 
@@ -225,35 +225,35 @@ async def download_thumbnail(
     return thumbnail_file
 ```
 
-### 上传视频时使用完整属性
+### Uploading video with full attributes
 
 ```python
-# 关键：必须提供 thumb、width、height、duration
+# Key point: thumb, width, height and duration must all be provided
 thumbnail_file = await download_thumbnail(client, temp_save_path, message)
 
 await message.reply_video(
     video_file_path,
     caption=caption,
-    thumb=thumbnail_file,              # 缩略图
-    width=message.video.width,         # 视频宽度
-    height=message.video.height,       # 视频高度
-    duration=message.video.duration,   # 视频时长
+    thumb=thumbnail_file,              # Thumbnail
+    width=message.video.width,         # Video width
+    height=message.video.height,       # Video height
+    duration=message.video.duration,   # Video duration
     parse_mode=pyrogram.enums.ParseMode.HTML,
 )
 ```
 
-**注意事项:**
-- 没有缩略图会导致视频显示为黑屏
-- 缺少 width/height 会影响视频预览
-- 上传后记得删除临时缩略图文件
+**Notes:**
+- Without a thumbnail the video shows as a black screen
+- Missing width/height breaks the video preview
+- Remember to delete the temporary thumbnail file after uploading
 
 ---
 
-## 4. 去除消息中的广告
+## 4. Removing Ads from Messages
 
-通过分析消息实体(entities)来提取或过滤广告内容，同时保留原有格式。
+Analyze the message entities to extract or filter out ad content while keeping the original formatting.
 
-### MessageProcessor 类
+### MessageProcessor class
 
 ```python
 import pyrogram
@@ -282,7 +282,7 @@ class MessageProcessor:
             cur_start_offset = entity.offset
             cur_end_offset = entity.offset + entity.length
 
-            # 检查实体是否在过滤范围内
+            # Check whether the entity falls within the filtered range
             if (
                 (cur_start_offset >= self.start_offset and cur_end_offset <= self.end_offset)
                 or (cur_start_offset < self.start_offset and cur_end_offset > self.start_offset)
@@ -311,7 +311,7 @@ class MessageProcessor:
         return pyrogram.parser.Parser.unparse(text, self.filtered_entities, True)
 ```
 
-### 处理广告替换
+### Handling ad replacement
 
 ```python
 async def proc_replace_advertisement(message_link: str, filter_str: str):
@@ -325,25 +325,25 @@ async def proc_replace_advertisement(message_link: str, filter_str: str):
     return processor.extract_text(total_span)
 ```
 
-**工作原理:**
-1. 解析消息链接获取原始消息
-2. 使用 filter_str 定位要保留的文本区域
-3. 提取该区域内的实体(链接、加粗、斜体等)
-4. 重新组装文本，保留格式但去除广告部分
+**How it works:**
+1. Parse the message link to get the original message
+2. Use filter_str to locate the text region to keep
+3. Extract the entities in that region (links, bold, italics, etc.)
+4. Reassemble the text, keeping the formatting but dropping the ad section
 
-**使用场景:**
-- 转发消息时去除频道水印/广告
-- 保留原始格式(链接、加粗、斜体等)
-- 批量处理时添加到过滤列表
+**Use cases:**
+- Removing channel watermarks/ads when forwarding messages
+- Keeping the original formatting (links, bold, italics, etc.)
+- Adding to the filter list for batch processing
 
 ---
 
-## 完整使用示例
+## Full Usage Example
 
 ```python
 import pyrogram
 
-# 1. 使用自定义超时的客户端
+# 1. Client with a custom timeout
 client = HookClient(
     "my_bot",
     api_id=API_ID,
@@ -354,15 +354,15 @@ client = HookClient(
 async def main():
     await client.start()
 
-    # 2. 解析消息链接
+    # 2. Parse the message link
     link = "https://t.me/channel_name/123"
     chat_id, message_id, topic_id = await parse_link(client, link)
 
-    # 3. 获取消息并下载视频
+    # 3. Fetch the message and download the video
     message = await client.get_messages(chat_id, message_id)
 
     if message.video:
-        # 下载缩略图避免黑屏
+        # Download the thumbnail to avoid a black screen
         thumbnail = await download_thumbnail(client, "/tmp", message)
 
         await client.send_video(
@@ -374,11 +374,11 @@ async def main():
             duration=message.video.duration,
         )
 
-    # 4. 去除广告
+    # 4. Remove ads
     if message.caption:
         clean_caption = await proc_replace_advertisement(
             link,
-            "想要的内容部分"
+            "the part of the content you want"
         )
         print(clean_caption)
 

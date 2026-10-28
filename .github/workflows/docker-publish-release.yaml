@@ -40,7 +40,7 @@ jobs:
           pyinstaller --distpath ./${{ env.DISTPATH }} media_downloader.spec
       - name: Add license and readme
         shell: bash
-        run: mv README_CN.md README.md ./${{ env.DISTPATH }}
+        run: mv README.md ./${{ env.DISTPATH }}
       - name: Archive artifact
         uses: actions/upload-artifact@master
         with:

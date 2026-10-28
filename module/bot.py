@@ -34,6 +34,7 @@ from module.pyrogram_extension import (
     report_bot_forward_status,
     report_bot_status,
     retry,
+    set_max_concurrent_transmissions,
     set_meta_data,
     upload_telegram_chat_message,
 )
@@ -149,6 +150,7 @@ class DownloadBot:
             workdir=app.session_file_path,
             proxy=app.proxy,
         )
+        set_max_concurrent_transmissions(self.bot, app.max_concurrent_transmissions)
 
         # Command list
         commands = [
@@ -1304,7 +1306,7 @@ async def start_message_monitor():
     Starts monitoring all chats that need to be forwarded.
     Runs every 60 seconds to check for new messages.
     """
-    last_message_ids = {}  # 存储每个聊天的最后处理的消息ID
+    last_message_ids = {}  # Last processed message ID for each chat
 
     while _bot.is_running:
         try:
@@ -1321,7 +1323,7 @@ async def start_message_monitor():
         except Exception as e:
             logger.exception(f"Error in message monitor: {e}")
 
-        await asyncio.sleep(60)  # 每60秒检查一次
+        await asyncio.sleep(60)  # Check every 60 seconds
 
 
 async def set_listen_forward_msg(

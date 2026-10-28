@@ -1,29 +1,40 @@
-version: "3.3"
+# Portainer: Stacks > Add stack > Repository (or paste this file into the Web editor),
+# then fill in the environment variables below.
+# Full guide: docs/portainer.md
 
 services:
   telegram_media_downloader:
-    image: tangyoha/telegram_media_downloader:latest
-    build: .
+    image: ghcr.io/ausyp/telegram_media_downloader:latest
+    container_name: telegram_media_downloader
+    restart: unless-stopped
+    # Needed for the one-time Telegram login (phone number + code) via
+    # Portainer's "Attach" console.
+    stdin_open: true
+    tty: true
     ports:
-      # Here is what you need to edit
-      - "5000:5000"
-    #environment:
-    #  - http_proxy=http://192.168.101.30:10811
-    #  - https_proxy=http://192.168.101.30:10811
+      - "${WEB_PORT:-5000}:5000"
+    environment:
+      # Required: from https://my.telegram.org/apps
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      # Bot token from @BotFather. Everything you send to the bot gets downloaded.
+      - BOT_TOKEN=${BOT_TOKEN}
+      # Comma separated Telegram user ids/usernames allowed to use the bot
+      # ("me" is the logged-in account).
+      - ALLOWED_USER_IDS=${ALLOWED_USER_IDS:-me}
+      # Password for the web UI on port 5000. Leave empty for no login.
+      - WEB_LOGIN_SECRET=${WEB_LOGIN_SECRET}
+      # How many files download at the same time.
+      - MAX_DOWNLOAD_TASK=${MAX_DOWNLOAD_TASK:-5}
+      # Optional: comma separated chat ids to fully download on start.
+      - CHAT_IDS=${CHAT_IDS}
+      - TZ=${TZ:-UTC}
     volumes:
-      # Here is what you need to edit
-      - "./downloads/:/app/downloads/"
+      # config.yaml, sessions, logs and temp files
+      - tmd_data:/data
+      # Where downloaded media goes. Change to a host path, e.g. /mnt/media/telegram
+      - ${DOWNLOAD_PATH:-tmd_downloads}:/downloads
 
-      # Rclone
-      - "$HOME/.config/rclone/:$HOME/.config/rclone/"
-
-      # The following is what you don't need to edit
-      - "./config.yaml:/app/config.yaml"
-      - "./data.yaml:/app/data.yaml"
-      - "./log/:/app/log/"
-      - "./sessions/:/app/sessions"
-      - "./temp/:/app/temp"
-    #restart: "unless-stopped"
-# volumes:
-#   sessions:
-#   temp:
+volumes:
+  tmd_data:
+  tmd_downloads:

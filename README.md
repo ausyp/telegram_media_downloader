@@ -12,7 +12,6 @@
 </p>
 
 <h3 align="center">
-  <a href="./README_CN.md">中文</a><span> · </span>
   <a href="https://github.com/tangyoha/telegram_media_downloader/discussions/categories/ideas">Feature request</a>
   <span> · </span>
   <a href="https://github.com/tangyoha/telegram_media_downloader/issues">Report a bug</a>
@@ -74,31 +73,31 @@ cd telegram_media_downloader
 pip3 install -r requirements.txt
 ```
 
-## Docker
-> For more detailed installation tutorial, please check the wiki
+## Docker / Portainer
 
-Make sure you have **docker** and **docker-compose** installed
+The image is published to `ghcr.io/ausyp/telegram_media_downloader` (amd64 and arm64).
+All settings can be passed as environment variables, so no files need editing on the host.
+
+**Portainer:** see the step-by-step guide in [docs/portainer.md](./docs/portainer.md).
+
+**docker compose:**
+
 ```sh
-docker pull tangyoha/telegram_media_downloader:latest
-mkdir -p ~/app && mkdir -p ~/app/log/ && cd ~/app
-wget https://raw.githubusercontent.com/tangyoha/telegram_media_downloader/master/docker-compose.yaml -O docker-compose.yaml
-wget https://raw.githubusercontent.com/tangyoha/telegram_media_downloader/master/config.yaml -O config.yaml
-wget https://raw.githubusercontent.com/tangyoha/telegram_media_downloader/master/data.yaml -O data.yaml
-# vi config.yaml and docker-compose.yaml
-vi config.yaml
+mkdir -p ~/telegram_media_downloader && cd ~/telegram_media_downloader
+wget https://raw.githubusercontent.com/ausyp/telegram_media_downloader/master/docker-compose.yaml
+cat > .env <<'ENV'
+API_ID=your_api_id
+API_HASH=your_api_hash
+BOT_TOKEN=your_bot_token
+WEB_LOGIN_SECRET=choose_a_password
+DOWNLOAD_PATH=./downloads
+ENV
 
-# The first time you need to start the foreground
-# enter your phone number and code, then exit(ctrl + c)
-docker-compose run --rm telegram_media_downloader
-
-# After performing the above operations, all subsequent startups will start in the background
-docker-compose up -d
+# First start: log in with your phone number and code, then detach with Ctrl+P, Ctrl+Q
+docker compose up -d && docker attach telegram_media_downloader
 
 # Upgrade
-docker pull tangyoha/telegram_media_downloader:latest
-cd ~/app
-docker-compose down
-docker-compose up -d
+docker compose pull && docker compose up -d
 ```
 
 ## Upgrade installation
