@@ -84,7 +84,9 @@ def main():
     if chat_ids:
         existing = {str(item.get("chat_id")): item for item in config.get("chat") or []}
         config["chat"] = [
-            existing.get(chat_id, {"chat_id": _int_or_str(chat_id), "last_read_message_id": 0})
+            existing.get(
+                chat_id, {"chat_id": _int_or_str(chat_id), "last_read_message_id": 0}
+            )
             for chat_id in _split(chat_ids)
         ]
 
