@@ -162,6 +162,8 @@ Over SSH, steps 1 to 4 are just `docker exec -it telegram_media_downloader tmd-l
 
 For a private channel or group, use the link of any message in it; your account must be a member.
 
+**Shared use.** When several people are in `ALLOWED_USER_IDS`, the bot tells everyone else whenever someone starts a download (for example `Ann is downloading Movie.mkv (1.2GB)`), so the same thing isn't downloaded twice. Each person must have sent the bot `/start` once to receive these.
+
 **The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
 
 **Your files** land directly in `DOWNLOAD_PATH` as `<message id> - <file name>`. To sort them into subfolders, set for example `FILE_PATH_PREFIX=chat_title,media_datetime` for `<chat name>/<year_month>/`. The message id at the front keeps two files with the same name from colliding; set `FILE_NAME_PREFIX=file_name` to drop it.

@@ -38,7 +38,7 @@ from module.pyrogram_extension import (
     set_meta_data,
     upload_telegram_chat_message,
 )
-from utils.format import replace_date_time, validate_title
+from utils.format import format_byte, replace_date_time, validate_title
 from utils.meta_data import MetaData
 
 # pylint: disable = C0301, R0902
@@ -812,6 +812,45 @@ async def remove_replace_advertisement_filter(
         return
 
 
+def _user_name(user: pyrogram.types.User) -> str:
+    """Display name of a Telegram user"""
+    if not user:
+        return "Someone"
+    name = " ".join(filter(None, [user.first_name, user.last_name]))
+    return name or (f"@{user.username}" if user.username else str(user.id))
+
+
+def _describe_media(message: pyrogram.types.Message) -> str:
+    """Short description of a message's media, e.g. 'Movie.mkv (1.2GB)'"""
+    if not message or not message.media:
+        return f"message {message.id}" if message else "a message"
+    media_obj = getattr(message, message.media.value, None)
+    name = getattr(media_obj, "file_name", None) or message.media.value
+    size = getattr(media_obj, "file_size", None)
+    return f"{name} ({format_byte(size)})" if size else name
+
+
+async def notify_other_users(
+    download_bot: DownloadBot, from_user: pyrogram.types.User, text: str
+):
+    """Tell every other allowed user what someone started downloading,
+    so people don't download the same thing twice."""
+    from_id = from_user.id if from_user else None
+    notified = set()
+    for user_id in download_bot.allowed_user_ids:
+        # Usernames can't be messaged by the bot directly, only numeric ids
+        if not isinstance(user_id, int) or user_id in (from_id, *notified):
+            continue
+        notified.add(user_id)
+        try:
+            await download_bot.bot.send_message(
+                user_id, f"{_user_name(from_user)} is downloading {text}"
+            )
+        except Exception as e:
+            # Most often the user hasn't sent /start to the bot yet
+            logger.debug(f"notify {user_id} failed: {e}")
+
+
 async def direct_download(
     download_bot: DownloadBot,
     chat_id: Union[str, int],
@@ -839,6 +878,10 @@ async def direct_download(
     node.client = client
 
     _bot.add_task_node(node)
+
+    await notify_other_users(
+        download_bot, message.from_user, _describe_media(download_message)
+    )
 
     await _bot.add_download_task(
         download_message,
@@ -991,6 +1034,12 @@ async def download_from_bot(client: pyrogram.Client, message: pyrogram.types.Mes
             )
             last_reply_message = await client.send_message(
                 message.from_user.id, reply_message, reply_to_message_id=message.id
+            )
+            await notify_other_users(
+                _bot,
+                message.from_user,
+                f"messages {start_offset_id} - {end_offset_id or 'latest'} "
+                f"from {chat_title}",
             )
             node = TaskNode(
                 chat_id=entity.id,
