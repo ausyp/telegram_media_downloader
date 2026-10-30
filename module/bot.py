@@ -202,11 +202,21 @@ class DownloadBot:
         self.bot_info = await self.bot.get_me()
 
         for allowed_user_id in self.app.allowed_user_ids:
+            # A numeric id works as is. Looking it up with get_chat fails for
+            # anyone this account hasn't talked to yet, which locked them out.
+            if str(allowed_user_id).lstrip("-").isdigit():
+                self.allowed_user_ids.append(int(allowed_user_id))
+                continue
             try:
                 chat = await self.client.get_chat(allowed_user_id)
                 self.allowed_user_ids.append(chat.id)
             except Exception as e:
-                logger.warning(f"set allowed_user_ids error: {e}")
+                # The filter can still match a username by itself
+                username = str(allowed_user_id).lstrip("@")
+                self.allowed_user_ids.append(username)
+                logger.warning(f"set allowed_user_ids error for {allowed_user_id}: {e}")
+
+        logger.info(f"Bot allowed users: {self.allowed_user_ids}")
 
         admin = await self.client.get_me()
         self.allowed_user_ids.append(admin.id)
