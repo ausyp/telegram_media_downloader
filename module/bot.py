@@ -1,9 +1,11 @@
 """Bot for media downloader"""
 
+# pylint: disable = C0302
+
 import asyncio
 import os
 from datetime import datetime
-from typing import Callable, List, Union
+from typing import Callable, List, Set, Union
 
 import pyrogram
 from loguru import logger
@@ -825,7 +827,7 @@ def _describe_media(message: pyrogram.types.Message) -> str:
     if not message or not message.media:
         return f"message {message.id}" if message else "a message"
     media_obj = getattr(message, message.media.value, None)
-    name = getattr(media_obj, "file_name", None) or message.media.value
+    name = str(getattr(media_obj, "file_name", None) or message.media.value)
     size = getattr(media_obj, "file_size", None)
     return f"{name} ({format_byte(size)})" if size else name
 
@@ -836,7 +838,7 @@ async def notify_other_users(
     """Tell every other allowed user what someone started downloading,
     so people don't download the same thing twice."""
     from_id = from_user.id if from_user else None
-    notified = set()
+    notified: Set[int] = set()
     for user_id in download_bot.allowed_user_ids:
         # Usernames can't be messaged by the bot directly, only numeric ids
         if not isinstance(user_id, int) or user_id in (from_id, *notified):
