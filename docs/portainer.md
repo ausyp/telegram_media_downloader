@@ -41,14 +41,17 @@ Click **Deploy the stack**.
 ## 3. Log in to Telegram (first run only)
 
 The downloader uses your own Telegram account, so it needs a one-time login.
+Until then the container log says `Telegram login needed` and waits.
 
-1. Open **Containers > telegram_media_downloader > Attach** and click **Connect**.
-2. Press Enter if you don't see a prompt yet. When asked
-   `Enter phone number or bot token`, type your phone number with country code
-   (for example `+15551234567`) and confirm with `y`.
-3. Enter the login code Telegram sends you (and your 2FA password if you have one).
-4. Once you see `Successfully started`, close the console with the **Disconnect** button.
-   Don't press Ctrl+C, which would stop the container.
+1. Open **Containers > telegram_media_downloader > Console**, keep the command as
+   `/bin/sh` and click **Connect**.
+2. Run `tmd-login`.
+3. Enter your phone number with country code (for example `+15551234567`) and confirm
+   with `y`.
+4. Enter the login code Telegram sends to your Telegram app, and your 2FA password if
+   you have one.
+5. When it says `Logged in as ...`, click **Disconnect**. The downloader starts by
+   itself within a few seconds.
 
 The login is saved in the `tmd_data` volume, so restarts and image updates don't
 need it again.

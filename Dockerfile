@@ -33,6 +33,10 @@ RUN apk add --no-cache tzdata
 # Copy app source code
 COPY . /app
 
+# `tmd-login` command for the one-time Telegram login from a container console
+RUN printf '#!/bin/sh\nexec python /app/docker/login.py "$@"\n' > /usr/local/bin/tmd-login \
+    && chmod +x /usr/local/bin/tmd-login
+
 VOLUME ["/data", "/downloads"]
 EXPOSE 5000
 

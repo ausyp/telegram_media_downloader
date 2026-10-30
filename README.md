@@ -93,8 +93,8 @@ WEB_LOGIN_SECRET=choose_a_password
 DOWNLOAD_PATH=./downloads
 ENV
 
-# First start: log in with your phone number and code, then detach with Ctrl+P, Ctrl+Q
-docker compose up -d && docker attach telegram_media_downloader
+# First start: log in once with your phone number and the code Telegram sends
+docker compose up -d && docker exec -it telegram_media_downloader tmd-login
 
 # Upgrade
 docker compose pull && docker compose up -d

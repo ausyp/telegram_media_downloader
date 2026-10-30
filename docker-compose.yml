@@ -7,9 +7,8 @@ services:
     image: ghcr.io/ausyp/telegram_media_downloader:latest
     container_name: telegram_media_downloader
     restart: unless-stopped
-    # Needed for the one-time Telegram login (phone number + code) via
-    # Portainer's "Attach" console.
-    stdin_open: true
+    # First run: log in once from Portainer's Console with `tmd-login`
+    # (see docs/portainer.md).
     tty: true
     ports:
       - "${WEB_PORT:-5000}:5000"
