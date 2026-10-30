@@ -22,6 +22,9 @@
 </h3>
 
 ## Overview
+
+> **Running it with Docker or Portainer?** Follow [Docker / Portainer setup](#docker--portainer-setup).
+
 > Support two default running
 
 * The robot is running, and the command `download` or `forward` is issued from the robot
@@ -73,32 +76,122 @@ cd telegram_media_downloader
 pip3 install -r requirements.txt
 ```
 
-## Docker / Portainer
+## Docker / Portainer setup
 
-The image is published to `ghcr.io/ausyp/telegram_media_downloader` (amd64 and arm64).
-All settings can be passed as environment variables, so no files need editing on the host.
+Setup takes about 15 minutes. At the end you have a Telegram bot that saves everything you send it to a folder on your server, plus a web dashboard on port 5000.
 
-**Portainer:** see the step-by-step guide in [docs/portainer.md](./docs/portainer.md).
+The image `ghcr.io/ausyp/telegram_media_downloader:latest` is public and built for amd64 and arm64 (works on a Raspberry Pi 4/5 or Synology too), so Portainer needs no registry login.
 
-**docker compose:**
+### 1. Get your API ID and API hash
+
+1. Open [my.telegram.org/apps](https://my.telegram.org/apps) and log in with your phone number. The code arrives in the Telegram app, not by SMS.
+2. Fill in the "Create new application" form. Any title and short name work, for example `MediaDownloader` and `mediadl`. Platform can be "Other".
+3. Copy **App api_id** (a number) and **App api_hash** (a 32-character string). Keep the hash private.
+
+### 2. Create your bot
+
+1. In Telegram, open [@BotFather](https://t.me/BotFather) and send `/newbot`.
+2. Pick a display name, then a username ending in `bot`, for example `my_media_dl_bot`.
+3. Copy the token BotFather sends (like `7012345678:AAH...`). This is your `BOT_TOKEN`.
+
+Only your own account can use the bot by default. To allow others, list their user ids or `@usernames` in `ALLOWED_USER_IDS`.
+
+### 3. Deploy the stack in Portainer
+
+1. Go to **Stacks > Add stack** and name it `telegram-downloader`.
+2. Under **Build method**, choose **Repository**:
+    - Repository URL: `https://github.com/ausyp/telegram_media_downloader`
+    - Repository reference: `refs/heads/master`
+    - Compose path: `docker-compose.yml` (the default)
+3. Under **Environment variables**, click **Load variables from .env file** and pick a filled-in copy of [`stack.env.example`](./stack.env.example), or switch to **Advanced mode** and paste:
+
+    ```
+    API_ID=12345678
+    API_HASH=0123456789abcdef0123456789abcdef
+    BOT_TOKEN=7012345678:AAH-your-token
+    WEB_LOGIN_SECRET=choose-a-password
+    DOWNLOAD_PATH=/mnt/media/telegram
+    MAX_DOWNLOAD_TASK=5
+    TZ=America/New_York
+    ```
+
+4. Click **Deploy the stack**.
+
+| Variable | Required | What it does | Default |
+| --- | --- | --- | --- |
+| `API_ID` | Yes | From step 1 | none |
+| `API_HASH` | Yes | From step 1 | none |
+| `BOT_TOKEN` | For the bot | From step 2 | none |
+| `WEB_LOGIN_SECRET` | Recommended | Password for the web UI | no password |
+| `DOWNLOAD_PATH` | Recommended | Host folder where files are saved | a Docker volume |
+| `ALLOWED_USER_IDS` | No | Comma-separated user ids or @usernames allowed to use the bot | `me` (your account) |
+| `MAX_DOWNLOAD_TASK` | No | Files downloaded at the same time | 5 |
+| `CHAT_IDS` | No | Chats to download in full on every start | none |
+| `WEB_PORT` | No | Host port for the web UI | 5000 |
+| `TZ` | No | Timezone used for dated folders | UTC |
+
+### 4. Log in to Telegram (first run only)
+
+Until you log in, the container log says `Telegram login needed` and waits. The login is then saved in the `tmd_data` volume and survives restarts and updates.
+
+1. Go to **Containers > telegram_media_downloader > Console**, keep `/bin/sh`, and click **Connect**.
+2. Run `tmd-login`.
+3. Enter your phone number with country code (for example `+15551234567`) and confirm with `y`.
+4. Enter the code Telegram sends to your Telegram app, then your two-step verification password if you use one.
+5. When it says `Logged in as ...`, click **Disconnect**. The downloader starts by itself within a few seconds.
+
+Over SSH, steps 1 to 4 are just `docker exec -it telegram_media_downloader tmd-login`.
+
+### 5. Use it
+
+**The bot.** Open your bot in Telegram and send `/start`.
+
+| You send the bot | What happens |
+| --- | --- |
+| Any photo, video, audio, voice note or file, or a forward of one | Downloaded right away |
+| A message link like `https://t.me/somechannel/123` | That one message is downloaded |
+| `/download https://t.me/somechannel 1 0` | Every message in the chat, from message 1 to the latest (0 = latest) |
+| `/download https://t.me/somechannel 100 200` | Messages 100 to 200 only |
+| `/forward` | Copies messages from one chat to another; send it alone to see the format |
+| `/listen_forward` | Keeps forwarding new messages from one chat to another |
+| `/get_info` | Shows the bot's status and settings |
+| `/stop` | Stops a running download or forward task |
+| `/help` | Lists every command |
+
+For a private channel or group, use the link of any message in it; your account must be a member.
+
+**The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
+
+**Your files** land in `DOWNLOAD_PATH`, sorted as `<chat name>/<year_month>/<message id> - <file name>`.
+
+### Optional extras
+
+- **Download whole chats automatically:** set `CHAT_IDS` to a comma-separated list such as `-1001234567890,-1009876543210`. Each start downloads new messages in those chats and remembers where it stopped. Get an id by forwarding a message from the chat to [@username_to_id_bot](https://t.me/username_to_id_bot).
+- **Advanced settings:** the container writes `/data/config.yaml` on first start. Edit it from the Console (`vi /data/config.yaml`) for filters, file name patterns, file types or rclone uploads (see [Configuration](#configuration)), then restart the container. Environment variables always override the matching line.
+- **Updating:** in **Stacks > telegram-downloader**, turn on **Re-pull image and redeploy** and click **Update the stack**. Your login and settings are kept.
+
+### Troubleshooting
+
+- **The bot ignores you:** your account isn't in `ALLOWED_USER_IDS`, or the step 4 login isn't done.
+- **`API_ID and API_HASH are required` in the logs:** the environment variables didn't reach the container. Recheck step 3 and redeploy.
+- **`stat .../docker-compose.yml: no such file`:** the compose path in the stack doesn't match. Use `docker-compose.yml`.
+- **Some files are skipped:** check `media_types` and `file_formats` in `/data/config.yaml`.
+- **Can't reach the web UI:** open port 5000 (or your `WEB_PORT`) on the server firewall.
+
+**Security:** the `tmd_data` volume holds a logged-in Telegram session, so treat backups of it like a password. Keep the web UI on your home network or behind a VPN.
+
+### Docker compose without Portainer
 
 ```sh
 mkdir -p ~/telegram_media_downloader && cd ~/telegram_media_downloader
 wget https://raw.githubusercontent.com/ausyp/telegram_media_downloader/master/docker-compose.yml
-cat > .env <<'ENV'
-API_ID=your_api_id
-API_HASH=your_api_hash
-BOT_TOKEN=your_bot_token
-WEB_LOGIN_SECRET=choose_a_password
-DOWNLOAD_PATH=./downloads
-ENV
-
-# First start: log in once with your phone number and the code Telegram sends
-docker compose up -d && docker exec -it telegram_media_downloader tmd-login
-
-# Upgrade
-docker compose pull && docker compose up -d
+wget -O .env https://raw.githubusercontent.com/ausyp/telegram_media_downloader/master/stack.env.example
+nano .env   # fill in your values
+docker compose up -d
+docker exec -it telegram_media_downloader tmd-login   # first run only
 ```
+
+Upgrade with `docker compose pull && docker compose up -d`.
 
 ## Upgrade installation
 
