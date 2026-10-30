@@ -57,6 +57,7 @@ ENV_OVERRIDES = [
     ("WEB_LOGIN_SECRET", "web_login_secret", str),
     ("MAX_DOWNLOAD_TASK", "max_download_task", int),
     ("MEDIA_TYPES", "media_types", _split),
+    ("FILE_NAME_PREFIX", "file_name_prefix", _split),
     ("SAVE_PATH", "save_path", str),
     ("LANGUAGE", "language", str),
     ("LOG_LEVEL", "log_level", str),

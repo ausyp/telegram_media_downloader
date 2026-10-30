@@ -127,6 +127,7 @@ Only your own account can use the bot by default. To allow others, list their us
 | `ALLOWED_USER_IDS` | No | Comma-separated user ids or @usernames allowed to use the bot | `me` (your account) |
 | `MAX_DOWNLOAD_TASK` | No | Files downloaded at the same time | 5 |
 | `CHAT_IDS` | No | Chats to download in full on every start | none |
+| `FILE_NAME_PREFIX` | No | File name parts in order: `message_id`, `file_name`, `caption`. Set `file_name` for the original name only | `message_id,file_name` |
 | `WEB_PORT` | No | Host port for the web UI | 5000 |
 | `TZ` | No | Timezone used for dated folders | UTC |
 
@@ -162,7 +163,7 @@ For a private channel or group, use the link of any message in it; your account 
 
 **The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
 
-**Your files** land in `DOWNLOAD_PATH`, sorted as `<chat name>/<year_month>/<message id> - <file name>`.
+**Your files** land in `DOWNLOAD_PATH`, sorted as `<chat name>/<year_month>/<message id> - <file name>`. The message id at the front keeps two files with the same name from colliding; set `FILE_NAME_PREFIX=file_name` to drop it.
 
 ### Optional extras
 

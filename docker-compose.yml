@@ -27,6 +27,9 @@ services:
       - MAX_DOWNLOAD_TASK=${MAX_DOWNLOAD_TASK:-5}
       # Optional: comma separated chat ids to fully download on start.
       - CHAT_IDS=${CHAT_IDS}
+      # File name parts, in order: message_id, file_name, caption.
+      # "file_name" alone keeps the original name.
+      - FILE_NAME_PREFIX=${FILE_NAME_PREFIX:-message_id,file_name}
       - TZ=${TZ:-UTC}
     volumes:
       # config.yaml, sessions, logs and temp files
