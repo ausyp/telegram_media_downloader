@@ -84,7 +84,7 @@ All settings can be passed as environment variables, so no files need editing on
 
 ```sh
 mkdir -p ~/telegram_media_downloader && cd ~/telegram_media_downloader
-wget https://raw.githubusercontent.com/ausyp/telegram_media_downloader/master/docker-compose.yaml
+wget https://raw.githubusercontent.com/ausyp/telegram_media_downloader/master/docker-compose.yml
 cat > .env <<'ENV'
 API_ID=your_api_id
 API_HASH=your_api_hash

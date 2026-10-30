@@ -17,9 +17,9 @@ In Portainer go to **Stacks > Add stack** and give it a name such as `telegram-d
 Choose one of these build methods:
 
 - **Repository:** repository URL `https://github.com/ausyp/telegram_media_downloader`,
-  reference `refs/heads/master`, compose path `docker-compose.yaml`. Portainer can then
+  reference `refs/heads/master`, compose path `docker-compose.yml`. Portainer can then
   redeploy automatically when the repo changes.
-- **Web editor:** paste the contents of [`docker-compose.yaml`](../docker-compose.yaml).
+- **Web editor:** paste the contents of [`docker-compose.yml`](../docker-compose.yml).
 
 Under **Environment variables** add:
 
