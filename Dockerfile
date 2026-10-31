@@ -19,7 +19,10 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
     DATA_DIR=/data \
-    SAVE_PATH=/downloads
+    SAVE_PATH=/downloads \
+    FILE_PATH_PREFIX=none \
+    FILE_NAME_PREFIX=file_name \
+    BOT_DOWNLOAD_FOLDER=bot_downloads
 
 # Copy installed deps from build stage
 COPY --from=build /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages

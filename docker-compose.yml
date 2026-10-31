@@ -28,13 +28,14 @@ services:
       # Optional: comma separated chat ids to fully download on start.
       - CHAT_IDS=${CHAT_IDS}
       # File name parts, in order: message_id, file_name, caption.
-      # "file_name" alone keeps the original name.
+      # "file_name" keeps the original name; add message_id in front to avoid
+      # same-name files being skipped.
       # Subfolders inside the download folder, in order: chat_title, media_datetime,
       # media_type. "none" saves every file directly in the download folder.
       - FILE_PATH_PREFIX=${FILE_PATH_PREFIX:-none}
       # Files sent straight to the bot go to <download folder>/<this>/<user id>/
       - BOT_DOWNLOAD_FOLDER=${BOT_DOWNLOAD_FOLDER:-bot_downloads}
-      - FILE_NAME_PREFIX=${FILE_NAME_PREFIX:-message_id,file_name}
+      - FILE_NAME_PREFIX=${FILE_NAME_PREFIX:-file_name}
       - TZ=${TZ:-UTC}
     volumes:
       # config.yaml, sessions, logs and temp files
