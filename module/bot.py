@@ -135,7 +135,7 @@ class DownloadBot:
         """Update config from str."""
         self.config["download_filter"] = self.download_filter
 
-        with open("d", "w", encoding="utf-8") as yaml_file:
+        with open(self.config_path, "w", encoding="utf-8") as yaml_file:
             self._yaml.dump(self.config, yaml_file)
 
     async def start(
@@ -194,6 +194,11 @@ class DownloadBot:
         self.download_chat_task = download_chat_task
 
         # load config
+        # Older versions saved it to a file named "d" by mistake
+        legacy_path = os.path.join(os.path.dirname(self.config_path), "d")
+        if not os.path.exists(self.config_path) and os.path.isfile(legacy_path):
+            os.replace(legacy_path, self.config_path)
+
         if os.path.exists(self.config_path):
             with open(self.config_path, encoding="utf-8") as f:
                 config = self._yaml.load(f.read())
