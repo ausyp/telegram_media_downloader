@@ -3,23 +3,86 @@
 
 <p align="center">
 <a href="https://deepwiki.com/tangyoha/telegram_media_downloader"><img alt="DeepWiki" src="https://img.shields.io/badge/DeepWiki-Documentation-blue"></a>
-<a href="https://github.com/tangyoha/telegram_media_downloader/actions"><img alt="Unittest" src="https://github.com/tangyoha/telegram_media_downloader/workflows/Unittest/badge.svg"></a>
-<a href="https://codecov.io/gh/tangyoha/telegram_media_downloader"><img alt="Coverage Status" src="https://codecov.io/gh/tangyoha/telegram_media_downloader/branch/master/graph/badge.svg"></a>
-<a href="https://github.com/tangyoha/telegram_media_downloader/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
+<a href="https://github.com/ausyp/telegram_media_downloader/actions"><img alt="Unittest" src="https://github.com/ausyp/telegram_media_downloader/workflows/Unittest/badge.svg"></a>
+<a href="./LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
 <a href="https://github.com/python/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-<a href="https://github.com/tangyoha/telegram_media_downloader/releases">
-<img alt="Code style: black" src="https://img.shields.io/github/v/release/tangyoha/telegram_media_downloader?display_name=tag"></a>
 </p>
 
 <h3 align="center">
-  <a href="https://github.com/tangyoha/telegram_media_downloader/discussions/categories/ideas">Feature request</a>
+  A fork of <a href="https://github.com/tangyoha/telegram_media_downloader">tangyoha/telegram_media_downloader</a>, set up for Docker and Portainer
+  <br>
+  <a href="https://github.com/ausyp/telegram_media_downloader/issues">Report a bug</a>
   <span> · </span>
-  <a href="https://github.com/tangyoha/telegram_media_downloader/issues">Report a bug</a>
+  <a href="#docker--portainer-setup">Setup guide</a>
   <span> · </span>
-  Support: <a href="https://github.com/tangyoha/telegram_media_downloader/discussions">Discussions</a>
-  <span> & </span>
-  <a href="https://t.me/TeegramMediaDownload">Telegram Community</a>
+  <a href="#about-this-fork">What's different</a>
 </h3>
+
+## About this fork
+
+### Acknowledgement
+
+This project is a fork of **[Telegram Media Downloader](https://github.com/tangyoha/telegram_media_downloader)** by [tangyoha](https://github.com/tangyoha) and its contributors. The downloader itself, the Telegram bot, the web UI, the filter language and cloud uploads are all their work, and this fork would not exist without it. tangyoha's project in turn builds on the original [telegram_media_downloader](https://github.com/Dineshkarthik/telegram_media_downloader) by [Dineshkarthik R](https://github.com/Dineshkarthik). Both are used under the [MIT License](./LICENSE), whose copyright notice is kept unchanged.
+
+If you find this useful, please star and support [the original project](https://github.com/tangyoha/telegram_media_downloader), and report bugs that also happen there [upstream](https://github.com/tangyoha/telegram_media_downloader/issues). The fork is based on upstream commit [`fe7ccdc`](https://github.com/tangyoha/telegram_media_downloader/commit/fe7ccdc) (March 2026).
+
+### What it does
+
+Telegram Media Downloader signs in as your own Telegram account and saves media (videos, documents, audio, photos, voice notes) from Telegram to a folder on your server. You can use it three ways:
+
+- **Bot:** send or forward any file to your own Telegram bot, or paste a message link, and it is downloaded. `/download` grabs a whole chat or a range of messages.
+- **Automatic:** list chats or channels in `CHAT_IDS` and every new message's media is downloaded each time it starts.
+- **Web UI:** a dashboard on port 5000 shows what is downloading and what finished.
+
+### What's different
+
+This fork keeps all of the original's features and changes how it is installed and how files are saved. It is meant to run as a Docker container managed from Portainer, with every setting as an environment variable.
+
+| Area | Original | This fork |
+| --- | --- | --- |
+| Docker image | Docker Hub, settings edited in `config.yaml` on the host | `ghcr.io/ausyp/telegram_media_downloader`, every setting via environment variables, works in Portainer |
+| First login | Attach to the container | `tmd-login` from the container console |
+| Bot downloads | One file at a time | Up to `MAX_DOWNLOAD_TASK` at once (default 5) |
+| Extra bot users | Numeric ids in `allowed_user_ids` were often ignored | Numeric ids and usernames both work |
+| Shared use | Nobody knew what others were downloading | The admin gets "X is downloading Y" when another user starts a download |
+| Folders | `<chat name>/<year_month>/` | Straight into the download folder; files sent to the bot under `bot_downloads/<user id>/` |
+| File names | `<message id> - <name>` | Original name |
+| Language | English and Chinese docs and comments | English only |
+
+### All modifications
+
+**Docker and Portainer**
+
+- Image published to `ghcr.io/ausyp/telegram_media_downloader` for amd64 and arm64 by a GitHub Actions workflow, replacing the Docker Hub workflow
+- `docker-compose.yml` ready for Portainer stacks, with named volumes and environment variables, and a fill-in [`stack.env.example`](./stack.env.example)
+- `config.yaml` is generated and updated from environment variables on every start (`docker/init_config.py`), so nothing is edited on the host
+- All state (config, Telegram session, logs, temp files) kept in one `/data` volume; downloads in `/downloads`
+- One-time login with the `tmd-login` command from a container console, replacing interactive attach; the container waits until it's done
+- Image defaults for folder and file naming, so older compose files still get them
+
+**Bot**
+
+- Media sent to the bot downloads in parallel, up to `MAX_DOWNLOAD_TASK`, instead of one at a time
+- Numeric user ids in `ALLOWED_USER_IDS` now work for people the account hasn't chatted with; usernames fall back to matching by name
+- The admin (the logged-in account) gets a message when another allowed user starts a download
+- Bot settings such as download filters are saved to `bot.yaml`, the file read at startup, instead of a file named `d`; an existing `d` is moved over
+
+**Folders and file names**
+
+- New `FILE_PATH_PREFIX` setting; default is no subfolders instead of `<chat>/<year_month>/`
+- New `FILE_NAME_PREFIX` setting; default is the original file name instead of `<message id> - <name>`
+- New `BOT_DOWNLOAD_FOLDER` setting; files sent to the bot go to `bot_downloads/<user id>/`
+
+**Translation and docs**
+
+- Chinese README removed; Chinese code comments and developer notes translated to English
+- Full Docker/Portainer setup guide, option tables and troubleshooting in this README and [`docs/portainer.md`](./docs/portainer.md)
+
+**Maintenance**
+
+- `PyTgCrypto` bumped to 1.2.12, since 1.2.6 no longer installs on arm64
+- CI moved to Python versions GitHub still provides (3.10 to 3.12)
+- 13 unit tests that were already failing upstream fixed, and tests added for the new folder layout and bot config
 
 ## Overview
 
@@ -222,21 +285,6 @@ Parts that are empty are left out. Photos have no original name, so they use Tel
 Any folder name works, for example `BOT_DOWNLOAD_FOLDER=Telegram Bot`.
 
 The month folder format (`2026_10`) and the separator between name parts (` - `) can be changed with `date_format` and `file_name_prefix_split` in `/data/config.yaml`.
-
-### Changes from the original project
-
-This fork differs from [tangyoha/telegram_media_downloader](https://github.com/tangyoha/telegram_media_downloader) in these ways:
-
-| Area | Original | This fork |
-| --- | --- | --- |
-| Docker image | Docker Hub, settings edited in `config.yaml` on the host | `ghcr.io/ausyp/telegram_media_downloader`, every setting via environment variables, works in Portainer |
-| First login | Attach to the container | `tmd-login` from the container console |
-| Bot downloads | One file at a time | Up to `MAX_DOWNLOAD_TASK` at once (default 5) |
-| Extra bot users | Numeric ids in `allowed_user_ids` were often ignored | Numeric ids and usernames both work |
-| Shared use | Nobody knew what others were downloading | The admin gets "X is downloading Y" when another user starts a download |
-| Folders | `<chat name>/<year_month>/` | Straight into the download folder; files sent to the bot under `bot_downloads/<user id>/` |
-| File names | `<message id> - <name>` | Original name |
-| Language | English and Chinese docs and comments | English only |
 
 ### Optional extras
 
