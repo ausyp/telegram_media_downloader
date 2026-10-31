@@ -342,6 +342,7 @@ def get_config(config, key, default=None, val_type=str, verbose=True):
 class Application:
     """Application load config and update config."""
 
+    # pylint: disable = R0915
     def __init__(
         self,
         config_file: str,
