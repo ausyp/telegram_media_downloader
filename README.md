@@ -163,7 +163,7 @@ Over SSH, steps 1 to 4 are just `docker exec -it telegram_media_downloader tmd-l
 
 For a private channel or group, use the link of any message in it; your account must be a member.
 
-**Shared use.** When several people are in `ALLOWED_USER_IDS`, the bot tells everyone else whenever someone starts a download (for example `Ann is downloading Movie.mkv (1.2GB)`), so the same thing isn't downloaded twice. Each person must have sent the bot `/start` once to receive these.
+**Shared use.** When other people in `ALLOWED_USER_IDS` start a download, the bot tells you, the admin (the account you logged in with), for example `Ann is downloading Movie.mkv (1.2GB)`. Other users aren't notified about each other. You must have sent the bot `/start` once to receive these.
 
 **The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
 
@@ -233,7 +233,7 @@ This fork differs from [tangyoha/telegram_media_downloader](https://github.com/t
 | First login | Attach to the container | `tmd-login` from the container console |
 | Bot downloads | One file at a time | Up to `MAX_DOWNLOAD_TASK` at once (default 5) |
 | Extra bot users | Numeric ids in `allowed_user_ids` were often ignored | Numeric ids and usernames both work |
-| Shared use | Nobody knew what others were downloading | Other allowed users get "X is downloading Y" |
+| Shared use | Nobody knew what others were downloading | The admin gets "X is downloading Y" when another user starts a download |
 | Folders | `<chat name>/<year_month>/` | Straight into the download folder; files sent to the bot under `bot_downloads/<user id>/` |
 | File names | `<message id> - <name>` | Original name |
 | Language | English and Chinese docs and comments | English only |

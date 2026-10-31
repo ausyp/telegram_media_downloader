@@ -5,7 +5,7 @@
 import asyncio
 import os
 from datetime import datetime
-from typing import Callable, List, Set, Union
+from typing import Callable, List, Optional, Union
 
 import pyrogram
 from loguru import logger
@@ -65,6 +65,8 @@ class DownloadBot:
         self.task_node: dict = {}
         self.is_running = True
         self.allowed_user_ids: List[Union[int, str]] = []
+        # The logged-in account, the only one told about others' downloads
+        self.admin_id: Optional[int] = None
         self.monitor_task = None
 
         meta = MetaData(datetime(2022, 8, 5, 14, 35, 12), 0, "", 0, 0, 0, "", 0)
@@ -221,6 +223,7 @@ class DownloadBot:
         logger.info(f"Bot allowed users: {self.allowed_user_ids}")
 
         admin = await self.client.get_me()
+        self.admin_id = admin.id
         self.allowed_user_ids.append(admin.id)
 
         await self.bot.set_bot_commands(commands)
@@ -835,22 +838,18 @@ def _describe_media(message: pyrogram.types.Message) -> str:
 async def notify_other_users(
     download_bot: DownloadBot, from_user: pyrogram.types.User, text: str
 ):
-    """Tell every other allowed user what someone started downloading,
-    so people don't download the same thing twice."""
-    from_id = from_user.id if from_user else None
-    notified: Set[int] = set()
-    for user_id in download_bot.allowed_user_ids:
-        # Usernames can't be messaged by the bot directly, only numeric ids
-        if not isinstance(user_id, int) or user_id in (from_id, *notified):
-            continue
-        notified.add(user_id)
-        try:
-            await download_bot.bot.send_message(
-                user_id, f"{_user_name(from_user)} is downloading {text}"
-            )
-        except Exception as e:
-            # Most often the user hasn't sent /start to the bot yet
-            logger.debug(f"notify {user_id} failed: {e}")
+    """Tell the admin (the logged-in account) what another allowed user
+    started downloading, so the same thing isn't downloaded twice."""
+    admin_id = download_bot.admin_id
+    if not admin_id or (from_user and from_user.id == admin_id):
+        return
+    try:
+        await download_bot.bot.send_message(
+            admin_id, f"{_user_name(from_user)} is downloading {text}"
+        )
+    except Exception as e:
+        # Most often the admin hasn't sent /start to the bot yet
+        logger.debug(f"notify admin {admin_id} failed: {e}")
 
 
 async def direct_download(
