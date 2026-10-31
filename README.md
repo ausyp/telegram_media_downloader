@@ -167,20 +167,90 @@ For a private channel or group, use the link of any message in it; your account 
 
 **The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
 
-**Your files** land directly in `DOWNLOAD_PATH` under their original names. Files sent or forwarded straight to the bot go to `DOWNLOAD_PATH/bot_downloads/<user id>/`, so each person's downloads stay together. To sort them into subfolders, set for example `FILE_PATH_PREFIX=chat_title,media_datetime` for `<chat name>/<year_month>/`. A second file with the same name in the same folder is skipped; set `FILE_NAME_PREFIX=message_id,file_name` to put the message id in front and keep both.
+### Folders and file names
+
+By default, files keep their original names and go straight into `DOWNLOAD_PATH`. Files sent or forwarded straight to the bot go into one folder with a subfolder per person:
+
+```
+DOWNLOAD_PATH/
+├── Some.Movie.2026.1080p.mkv          <- from /download ranges, links and CHAT_IDS
+└── bot_downloads/                     <- BOT_DOWNLOAD_FOLDER
+    ├── 5356296079/                    <- one folder per user id
+    │   └── Another.Show.S01E01.mkv
+    └── 9238101655/
+```
+
+Three settings control this. Each takes a comma-separated list, and the order of the parts is the order they appear in.
+
+**`FILE_PATH_PREFIX`: subfolders inside `DOWNLOAD_PATH`** (default `none`)
+
+| Part | Folder it adds | Example |
+| --- | --- | --- |
+| `chat_title` | Name of the channel or group (chat id if it has no name) | `Movie Channel/` |
+| `media_datetime` | Year and month the message was posted | `2026_10/` |
+| `media_type` | Kind of media | `video/`, `audio/`, `document/`, `photo/` |
+| `none` | No subfolders | |
+
+| Setting | Saved as |
+| --- | --- |
+| `none` | `DOWNLOAD_PATH/Movie.mkv` |
+| `chat_title` | `DOWNLOAD_PATH/Movie Channel/Movie.mkv` |
+| `chat_title,media_datetime` | `DOWNLOAD_PATH/Movie Channel/2026_10/Movie.mkv` (the original project's layout) |
+| `media_type,chat_title` | `DOWNLOAD_PATH/video/Movie Channel/Movie.mkv` |
+
+For files sent to the bot, `chat_title` is replaced by `bot_downloads/<user id>`. The other parts still apply below it.
+
+**`FILE_NAME_PREFIX`: how files are named** (default `file_name`)
+
+| Part | What it adds | Example |
+| --- | --- | --- |
+| `file_name` | The file's original name | `Movie.mkv` |
+| `message_id` | The Telegram message number | `1985` |
+| `caption` | The message's caption text | `New release in 4K` |
+
+| Setting | Saved as |
+| --- | --- |
+| `file_name` | `Movie.mkv` |
+| `message_id,file_name` | `1985 - Movie.mkv` (the original project's naming) |
+| `file_name,caption` | `Movie - New release in 4K.mkv` |
+| `caption` | `New release in 4K.mkv` |
+
+Parts that are empty are left out. Photos have no original name, so they use Telegram's file id, and media with no name or caption falls back to the message number. With `file_name` alone, a second file with the same name in the same folder is skipped as already downloaded; add `message_id` in front if that happens to you.
+
+**`BOT_DOWNLOAD_FOLDER`: folder for files sent to the bot** (default `bot_downloads`)
+
+Any folder name works, for example `BOT_DOWNLOAD_FOLDER=Telegram Bot`.
+
+The month folder format (`2026_10`) and the separator between name parts (` - `) can be changed with `date_format` and `file_name_prefix_split` in `/data/config.yaml`.
+
+### Changes from the original project
+
+This fork differs from [tangyoha/telegram_media_downloader](https://github.com/tangyoha/telegram_media_downloader) in these ways:
+
+| Area | Original | This fork |
+| --- | --- | --- |
+| Docker image | Docker Hub, settings edited in `config.yaml` on the host | `ghcr.io/ausyp/telegram_media_downloader`, every setting via environment variables, works in Portainer |
+| First login | Attach to the container | `tmd-login` from the container console |
+| Bot downloads | One file at a time | Up to `MAX_DOWNLOAD_TASK` at once (default 5) |
+| Extra bot users | Numeric ids in `allowed_user_ids` were often ignored | Numeric ids and usernames both work |
+| Shared use | Nobody knew what others were downloading | Other allowed users get "X is downloading Y" |
+| Folders | `<chat name>/<year_month>/` | Straight into the download folder; files sent to the bot under `bot_downloads/<user id>/` |
+| File names | `<message id> - <name>` | Original name |
+| Language | English and Chinese docs and comments | English only |
 
 ### Optional extras
 
 - **Download whole chats automatically:** set `CHAT_IDS` to a comma-separated list such as `-1001234567890,-1009876543210`. Each start downloads new messages in those chats and remembers where it stopped. Get an id by forwarding a message from the chat to [@username_to_id_bot](https://t.me/username_to_id_bot).
 - **Advanced settings:** the container writes `/data/config.yaml` on first start. Edit it from the Console (`vi /data/config.yaml`) for filters, file name patterns, file types or rclone uploads (see [Configuration](#configuration)), then restart the container. Environment variables always override the matching line.
-- **Updating:** in **Stacks > telegram-downloader**, turn on **Re-pull image and redeploy** and click **Update the stack**. Your login and settings are kept.
+- **Updating:** in **Stacks > telegram-downloader**, click **Pull and redeploy** with **Re-pull image** on (stacks deployed from Repository), or **Update the stack** with **Re-pull image and redeploy** on (Web editor stacks). Your login and settings are kept.
 
 ### Troubleshooting
 
 - **The bot ignores you:** your account isn't in `ALLOWED_USER_IDS`, or the step 4 login isn't done.
 - **`API_ID and API_HASH are required` in the logs:** the environment variables didn't reach the container. Recheck step 3 and redeploy.
 - **`stat .../docker-compose.yml: no such file`:** the compose path in the stack doesn't match. Use `docker-compose.yml`.
-- **Some files are skipped:** check `media_types` and `file_formats` in `/data/config.yaml`.
+- **Some files are skipped:** a file with the same name already exists in that folder (set `FILE_NAME_PREFIX=message_id,file_name`), or its type is excluded by `media_types` / `file_formats` in `/data/config.yaml`.
+- **Settings don't take effect:** run `grep -A2 prefix /data/config.yaml` in the container console to see what is applied. An environment variable set to an empty value is ignored, so delete it or give it a value.
 - **Can't reach the web UI:** open port 5000 (or your `WEB_PORT`) on the server firewall.
 
 **Security:** the `tmd_data` volume holds a logged-in Telegram session, so treat backups of it like a password. Keep the web UI on your home network or behind a VPN.
