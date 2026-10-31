@@ -138,6 +138,12 @@ class DownloadBot:
         with open(self.config_path, "w", encoding="utf-8") as yaml_file:
             self._yaml.dump(self.config, yaml_file)
 
+    def migrate_legacy_config(self):
+        """Older versions saved the bot config to a file named "d" by mistake"""
+        legacy_path = os.path.join(os.path.dirname(self.config_path), "d")
+        if not os.path.exists(self.config_path) and os.path.isfile(legacy_path):
+            os.replace(legacy_path, self.config_path)
+
     async def start(
         self,
         app: Application,
@@ -194,11 +200,7 @@ class DownloadBot:
         self.download_chat_task = download_chat_task
 
         # load config
-        # Older versions saved it to a file named "d" by mistake
-        legacy_path = os.path.join(os.path.dirname(self.config_path), "d")
-        if not os.path.exists(self.config_path) and os.path.isfile(legacy_path):
-            os.replace(legacy_path, self.config_path)
-
+        self.migrate_legacy_config()
         if os.path.exists(self.config_path):
             with open(self.config_path, encoding="utf-8") as f:
                 config = self._yaml.load(f.read())
