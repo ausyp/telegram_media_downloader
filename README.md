@@ -128,6 +128,7 @@ Only your own account can use the bot by default. To allow others, list their us
 | `MAX_DOWNLOAD_TASK` | No | Files downloaded at the same time | 5 |
 | `CHAT_IDS` | No | Chats to download in full on every start | none |
 | `FILE_PATH_PREFIX` | No | Subfolders inside `DOWNLOAD_PATH`, in order: `chat_title`, `media_datetime`, `media_type`. `none` = no subfolders | `none` |
+| `BOT_DOWNLOAD_FOLDER` | No | Folder inside `DOWNLOAD_PATH` for files sent straight to the bot, with one subfolder per user id | `bot_downloads` |
 | `FILE_NAME_PREFIX` | No | File name parts in order: `message_id`, `file_name`, `caption`. Set `file_name` for the original name only | `message_id,file_name` |
 | `WEB_PORT` | No | Host port for the web UI | 5000 |
 | `TZ` | No | Timezone used for dated folders | UTC |
@@ -166,7 +167,7 @@ For a private channel or group, use the link of any message in it; your account 
 
 **The web UI.** Open `http://YOUR-SERVER-IP:5000` and log in with `WEB_LOGIN_SECRET`. It shows downloads in progress with their speed, and finished downloads with their paths.
 
-**Your files** land directly in `DOWNLOAD_PATH` as `<message id> - <file name>`. To sort them into subfolders, set for example `FILE_PATH_PREFIX=chat_title,media_datetime` for `<chat name>/<year_month>/`. The message id at the front keeps two files with the same name from colliding; set `FILE_NAME_PREFIX=file_name` to drop it.
+**Your files** land directly in `DOWNLOAD_PATH` as `<message id> - <file name>`. Files sent or forwarded straight to the bot go to `DOWNLOAD_PATH/bot_downloads/<user id>/`, so each person's downloads stay together. To sort them into subfolders, set for example `FILE_PATH_PREFIX=chat_title,media_datetime` for `<chat name>/<year_month>/`. The message id at the front keeps two files with the same name from colliding; set `FILE_NAME_PREFIX=file_name` to drop it.
 
 ### Optional extras
 

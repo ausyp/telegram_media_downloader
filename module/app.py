@@ -409,6 +409,8 @@ class Application:
         )
         self.date_format: str = "%Y_%m"
         self.drop_no_audio_video: bool = False
+        # Media sent straight to the bot goes to <save_path>/<this>/<user id>
+        self.bot_download_folder: str = "bot_downloads"
         self.enable_download_txt: bool = False
         self.filter_advertisement_list: yaml.comments.CommentedSeq = (
             yaml.comments.CommentedSeq([])
@@ -546,6 +548,10 @@ class Application:
 
         self.drop_no_audio_video = get_config(
             _config, "drop_no_audio_video", self.drop_no_audio_video, bool
+        )
+
+        self.bot_download_folder = get_config(
+            _config, "bot_download_folder", self.bot_download_folder, str
         )
 
         self.enable_download_txt = get_config(
@@ -715,7 +721,11 @@ class Application:
         return ret
 
     def get_file_save_path(
-        self, media_type: str, chat_title: str, media_datetime: str
+        self,
+        media_type: str,
+        chat_title: str,
+        media_datetime: str,
+        user_folder: Optional[str] = None,
     ) -> str:
         """Get file save path prefix.
 
@@ -730,6 +740,10 @@ class Application:
         media_datetime: str
             media datetime
 
+        user_folder: Optional[str]
+            For media sent straight to the bot: the sender's folder, kept
+            together under bot_download_folder instead of the chat title
+
         Returns
         -------
         str
@@ -737,9 +751,12 @@ class Application:
         """
 
         res: str = self.save_path
+        if user_folder:
+            res = os.path.join(res, self.bot_download_folder, user_folder)
         for prefix in self.file_path_prefix:
             if prefix == "chat_title":
-                res = os.path.join(res, chat_title)
+                if not user_folder:
+                    res = os.path.join(res, chat_title)
             elif prefix == "media_datetime":
                 res = os.path.join(res, media_datetime)
             elif prefix == "media_type":

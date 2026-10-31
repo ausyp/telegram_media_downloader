@@ -70,3 +70,23 @@ class AppTestCase(unittest.TestCase):
         app.config["chat"] = [{"chat_id": 123, "last_read_message_id": 0}]
         app.update_config()
         mock_open.assert_called_with("data_test.yaml", "w", encoding="utf-8")
+
+
+class FileSavePathTestCase(unittest.TestCase):
+    def test_bot_user_folder(self):
+        app = Application("", "")
+        app.save_path = "/downloads"
+        app.file_path_prefix = ["chat_title", "media_datetime"]
+        self.assertEqual(
+            app.get_file_save_path("video", "Chat", "2026_10"),
+            os.path.join("/downloads", "Chat", "2026_10"),
+        )
+        self.assertEqual(
+            app.get_file_save_path("video", "123", "2026_10", "123"),
+            os.path.join("/downloads", "bot_downloads", "123", "2026_10"),
+        )
+        app.file_path_prefix = ["none"]
+        self.assertEqual(
+            app.get_file_save_path("video", "123", "2026_10", "123"),
+            os.path.join("/downloads", "bot_downloads", "123"),
+        )

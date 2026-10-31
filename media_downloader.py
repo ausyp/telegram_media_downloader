@@ -194,6 +194,11 @@ async def _get_media_meta(
     if message.chat and message.chat.title:
         dirname = validate_title(f"{message.chat.title}")
 
+    # A private chat here is someone's chat with the bot
+    user_folder = None
+    if getattr(message.chat, "type", None) == pyrogram.enums.ChatType.PRIVATE:
+        user_folder = validate_title(f"{chat_id}")
+
     if message.date:
         datetime_dir_name = message.date.strftime(app.date_format)
     else:
@@ -202,7 +207,9 @@ async def _get_media_meta(
     if _type in ["voice", "video_note"]:
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name, user_folder
+        )
         file_name = "{} - {}_{}.{}".format(
             message.id,
             _type,
@@ -247,7 +254,9 @@ async def _get_media_meta(
             app.get_file_name(message.id, file_name, caption) + file_name_suffix
         )
 
-        file_save_path = app.get_file_save_path(_type, dirname, datetime_dir_name)
+        file_save_path = app.get_file_save_path(
+            _type, dirname, datetime_dir_name, user_folder
+        )
 
         temp_file_name = os.path.join(app.temp_save_path, dirname, gen_file_name)
 

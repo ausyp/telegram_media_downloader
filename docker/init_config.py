@@ -60,6 +60,7 @@ ENV_OVERRIDES = [
     ("FILE_NAME_PREFIX", "file_name_prefix", _split),
     # "none" is not a known folder part, so files land directly in save_path
     ("FILE_PATH_PREFIX", "file_path_prefix", _split),
+    ("BOT_DOWNLOAD_FOLDER", "bot_download_folder", str),
     ("SAVE_PATH", "save_path", str),
     ("LANGUAGE", "language", str),
     ("LOG_LEVEL", "log_level", str),
